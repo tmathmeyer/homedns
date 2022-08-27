@@ -2,18 +2,39 @@
 #include <iostream>
 #include <memory>
 
-#include "bitstream.h"
+#include "homedns/bitstream.h"
 
 #include <bitset>
 
 void WriteTest() {
-  std::unique_ptr<homedns::WriteStream> bs =
-      std::make_unique<homedns::WriteStream>(4);
+#define WRITEPRINT(bits, value)                                     \
+  do {                                                              \
+    auto ws = std::make_unique<homedns::WriteStream>(4);            \
+    auto st = ws->Write<bits>(value);                               \
+    if (!st.is_ok()) {                                              \
+      st.Print();                                                   \
+    } else {                                                        \
+      auto rs = std::move(ws)->Convert();                           \
+      uint32_t __tempvalue = 0;                                     \
+      uint32_t __tempvalue2 = 0;                                    \
+      auto st2 = rs->Read<32>(&__tempvalue, 0, 0);                  \
+      auto st3 = rs->Read<bits>(&__tempvalue2, 0, 0);               \
+      if (!st2.is_ok()) {                                           \
+        st2.Print();                                                \
+      } else {                                                      \
+        std::cout << "Write<" << bits << ">(" << value              \
+                  << ") = " << std::bitset<32>(__tempvalue) << " (" \
+                  << std::bitset<bits>(__tempvalue2) << ")\n";      \
+      }                                                             \
+    }                                                               \
+  } while (0)
+
+  WRITEPRINT(6, 0xAA);
 }
 
-
 void ReadTest() {
-  uint8_t value[4] = {0xDB, 0x6D, 0xB6, 0xDB};
+  // uint8_t value[4] = {0xDB, 0x6D, 0xB6, 0xDB};
+  uint8_t value[4] = {0xAA, 0x00, 0x00, 0x00};
 
   std::unique_ptr<homedns::ReadStream> bs =
       std::make_unique<homedns::ReadStream>(4, value);
@@ -31,6 +52,7 @@ void ReadTest() {
   } while (0)
 
   PRINTREAD(32, 0, 0);
+  PRINTREAD(8, 0, 0);
   PRINTREAD(3, 0, 0);
   PRINTREAD(3, 0, 1);
   PRINTREAD(3, 0, 2);
@@ -58,7 +80,6 @@ void ReadTest() {
   PRINTNEXT(4);
   PRINTNEXT(4);
 }
-
 
 int main() {
   ReadTest();
