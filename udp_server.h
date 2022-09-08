@@ -1,12 +1,29 @@
 #pragma once
 
-namespace homends {
+#include <vector>
+#include <netinet/in.h>
+
+#include "base/bind/bind.h"
+
+namespace homedns {
 
 class UDPServer {
  public:
+  typedef void(*DataCB)(UDPServer*, uint8_t*, size_t, struct sockaddr_in);
+  static std::unique_ptr<UDPServer> Create(uint16_t port);
+
   ~UDPServer();
-  UDPServer(uint16_t port);
-  virtual std::vector<uint8_t> OnData(std::vector<uint8_t> data);
+  int SendData(std::vector<uint8_t> data);
+  int SendData(uint8_t* data, size_t len);
+  void OnData(DataCB cb);
+
+  void Start();
+
+ private:
+  UDPServer(int socket);
+
+  int socket_;
+  DataCB cb_;
 };
 
-}
+}  // namespace homedns
