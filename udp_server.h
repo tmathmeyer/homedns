@@ -9,12 +9,13 @@ namespace homedns {
 
 class UDPServer {
  public:
-  typedef void(*DataCB)(UDPServer*, uint8_t*, size_t, struct sockaddr_in);
+  using DataCB = base::RepeatingCallback<
+      void(UDPServer*, uint8_t*, size_t, struct sockaddr_in)>;
   static std::unique_ptr<UDPServer> Create(uint16_t port);
 
   ~UDPServer();
   int SendData(std::vector<uint8_t> data);
-  int SendData(uint8_t* data, size_t len);
+  int SendData(const uint8_t* data, size_t len);
   void OnData(DataCB cb);
 
   void Start();

@@ -90,6 +90,15 @@ PacketStatus DnsPacketHeader::Import(DnsPacketHeader* header,
   return base::OkStatus();
 }
 
+void DnsPacket::operator=(DnsPacket&& packet) {
+  label_manager_ = std::move(packet.label_manager_);
+  header_ = std::move(packet.header_);
+  questions_ = std::move(packet.questions_);
+  answers_ = std::move(packet.answers_);
+  authorities_ = std::move(packet.authorities_);
+  additional_ = std::move(packet.additional_);
+}
+
 DnsPacket::DnsPacket(uint16_t ID) {
   header_ = std::make_unique<DnsPacketHeader>(
       /*.ID = */ ID,

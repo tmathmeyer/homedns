@@ -64,6 +64,7 @@ class DnsPacket {
   /* lifetime */
   ~DnsPacket() = default;
   DnsPacket(DnsPacket&&) = default;
+  void operator=(DnsPacket&&);
   explicit DnsPacket(uint16_t ID);
   static DnsPacket Create(uint16_t ID);
 
@@ -82,6 +83,11 @@ class DnsPacket {
   DnsPacket SetRecursionAvailable(bool recursion) &&;
   DnsPacket SetResponseCode(uint8_t code) &&;
   DnsPacket SetReserved(uint8_t reserved) &&;
+
+  size_t GetNumQuestions() const { return questions_.size(); }
+  size_t GetNumAnswers() const { return answers_.size(); }
+  size_t GetNumAuthorities() const { return authorities_.size(); }
+  size_t GetNumAdditional() const { return additional_.size(); }
 
   std::optional<const DnsQuestion*> GetQuestion(size_t q_num);
   std::optional<const PreambleAndRecord*> GetAnswer(size_t a_num);
