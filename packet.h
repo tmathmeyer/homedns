@@ -63,7 +63,7 @@ class DnsPacket {
  public:
   /* lifetime */
   ~DnsPacket() = default;
-  DnsPacket(DnsPacket&&) = default;
+  DnsPacket(DnsPacket&&);
   void operator=(DnsPacket&&);
   explicit DnsPacket(uint16_t ID);
   static DnsPacket Create(uint16_t ID);
@@ -94,9 +94,13 @@ class DnsPacket {
   std::optional<const PreambleAndRecord*> GetAuthority(size_t a_num);
   std::optional<const PreambleAndRecord*> GetAdditional(size_t a_num);
 
+  void CheckLM();
+
+  PacketStatus::Or<DnsPacket> AddQuestion(const DnsQuestion& question);
   PacketStatus::Or<DnsPacket> AddQuestion(std::string name,
                                           uint16_t Type,
                                           uint16_t Class);
+
   template <RecordType R, typename T>
   PacketStatus::Or<DnsPacket> AddRecord(std::string Name,
                                         uint16_t Class,

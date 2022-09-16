@@ -9,6 +9,7 @@ struct PacketStatusSpec {
     kOk,
     kParsingError,
     kIndexOutOfRange,
+    kInvalidRecordType,
   };
 
   static base::StatusGroupType Group() { return "PacketStatus"; }

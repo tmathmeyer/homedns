@@ -19,67 +19,50 @@ cpp_header (
   srcs = [
     "udp_server.h",
   ],
-  deps = [
+  includes = [
     ":include",
     "//base/bind:include",
   ],
 )
 
-cpp_object (
-  name = "packet",
-  srcs = [
-    "packet.cc",
-  ],
-  deps = [
-    ":include",
-    ":labels",
-    ":records",
-  ],
-)
-
-cpp_object (
-  name = "records",
-  srcs = [
-    "records.cc",
-  ],
-  deps = [
-    ":include",
-  ],
-)
-
-cpp_object (
-  name = "labels",
+cc_object (
+  name = "libdns",
   srcs = [
     "labels.cc",
+    "packet.cc",
+    "records.cc",
+  ],
+  includes = [
+    ":include",
   ],
   deps = [
-    ":include",
+    "//base/status:status",
   ],
 )
 
-cpp_object (
-  name = "udp_server",
+cc_object (
+  name = "libudp",
   srcs = [
     "udp_server.cc",
   ],
-  deps = [
-    ":include",
+  includes = [
     ":udp_include",
   ],
 )
 
-
-cpp_binary (
+cc_binary (
   name = "dns_resolver",
   srcs = [
-    "dns_resolver.cc"
+    "dns_resolver.cc",
+  ],
+  includes = [
+    ":udp_include",
+    ":include",
+    "//homedns/responders:include",
   ],
   deps = [
-    ":udp_include",
-    ":udp_server",
-    ":packet",
-    ":records",
-    ":labels",
-    "//base/status:status",
+    ":libdns",
+    ":libudp",
+    "//homedns/responders:responders",
   ],
 )

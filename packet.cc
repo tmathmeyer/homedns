@@ -90,6 +90,17 @@ PacketStatus DnsPacketHeader::Import(DnsPacketHeader* header,
   return base::OkStatus();
 }
 
+void DnsPacket::CheckLM() {
+  if (this == nullptr) {
+    puts("THIS IS NULL");
+    exit(1);
+  }
+  if (label_manager_ == nullptr) {
+    puts("LM IS NULL");
+    exit(1);
+  }
+}
+
 void DnsPacket::operator=(DnsPacket&& packet) {
   label_manager_ = std::move(packet.label_manager_);
   header_ = std::move(packet.header_);
@@ -115,6 +126,10 @@ DnsPacket::DnsPacket(uint16_t ID) {
       /*.NC = */ 0,
       /*.DC = */ 0);
   label_manager_ = std::make_unique<LabelManager>();
+}
+
+DnsPacket::DnsPacket(DnsPacket&& src) {
+  *this = std::move(src);
 }
 
 DnsPacket DnsPacket::Create(uint16_t ID) {
@@ -350,15 +365,15 @@ base::json::Array RenderQuestions(const std::vector<DnsQuestion>& qs) {
 
 base::json::Object RenderRecord(const DnsRecord& record) {
   std::map<std::string, base::json::JSON> blob;
-  if (const auto *type = std::get_if<DnsARecord>(&record)) {
+  if (const auto* type = std::get_if<DnsARecord>(&record)) {
     return type->Render();
-  } else if (const auto *type = std::get_if<DnsNSRecord>(&record)) {
+  } else if (const auto* type = std::get_if<DnsNSRecord>(&record)) {
     return type->Render();
-  } else if (const auto *type = std::get_if<DnsCNAMERecord>(&record)) {
+  } else if (const auto* type = std::get_if<DnsCNAMERecord>(&record)) {
     return type->Render();
-  } else if (const auto *type = std::get_if<DnsMXRecord>(&record)) {
+  } else if (const auto* type = std::get_if<DnsMXRecord>(&record)) {
     return type->Render();
-  } else if (const auto *type = std::get_if<DnsAAAARecord>(&record)) {
+  } else if (const auto* type = std::get_if<DnsAAAARecord>(&record)) {
     return type->Render();
   }
   return base::json::Object(std::move(blob));
@@ -492,6 +507,12 @@ PacketStatus::Or<DnsPacket> DnsPacket::AddQuestion(std::string name,
   questions_.push_back(std::move(question));
   header_->QC++;
   return std::move(*this);
+}
+
+PacketStatus::Or<DnsPacket> DnsPacket::AddQuestion(
+    const DnsQuestion& question) {
+  return AddQuestion(question.LabelSequence->Render(), question.Type,
+                     question.Class);
 }
 
 }  // namespace homedns

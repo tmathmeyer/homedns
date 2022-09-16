@@ -9,14 +9,39 @@
 #include "packet.h"
 #include "udp_server.h"
 
+#include "responders/responders.h"
+
 namespace homedns {
 
 PacketStatus::Or<DnsPacket> RespondTo(const DnsQuestion* question,
                                       DnsPacket response) {
-  return std::move(response);
+  response = std::move(response).AddQuestion(*question).Unwrap();
+
+  switch(question->Type) {
+    case DnsARecord::TYPE:
+      return ReplyARecord(question, std::move(response));
+    case DnsNSRecord::TYPE:
+      return ReplyNSRecord(question, std::move(response));
+    case DnsCNAMERecord::TYPE:
+      return ReplyCNAMERecord(question, std::move(response));
+    case DnsMXRecord::TYPE:
+      return ReplyMXRecord(question, std::move(response));
+    case DnsAAAARecord::TYPE:
+      return ReplyAAAARecord(question, std::move(response));
+    case DnsLOCRecord::TYPE:
+      return ReplyLOCRecord(question, std::move(response));
+    case DnsRPRecord::TYPE:
+      return ReplyRPRecord(question, std::move(response));
+    case DnsSOARecord::TYPE:
+      return ReplySOARecord(question, std::move(response));
+    case DnsTXTRecord::TYPE:
+      return ReplyTXTRecord(question, std::move(response));
+    default:
+      return PacketStatus::Codes::kInvalidRecordType;
+  }
 }
 
-void OnRequest(UDPServer* server,
+void OnRequest(Response write_out,
                uint8_t* data,
                size_t len,
                struct sockaddr_in client) {
@@ -29,12 +54,15 @@ void OnRequest(UDPServer* server,
 
   auto m_packet = DnsPacket::Import(std::make_unique<ReadStream>(len, data));
 
-  // If we can't parse
+  // If we can't parse the incoming packet, do _not_ write back. It's probably
+  // some kind of nasty hacking attack, and we might as well just mess with the
+  // sender.
   if (!m_packet.has_value()) {
     std::move(m_packet).error().Print();
     return;
   }
 
+  // Build the default response packet
   DnsPacket query = std::move(m_packet).value();
   DnsPacket response =
       DnsPacket::Create(query.GetPacketHeader().ID)
@@ -46,6 +74,7 @@ void OnRequest(UDPServer* server,
           .SetRecursionAvailable(0)
           .SetResponseCode(0)
           .SetReserved(0);
+
   size_t q_count = query.GetNumQuestions();
   for (size_t q_index = 0; q_index < q_count; q_index++) {
     std::optional<const DnsQuestion*> q = query.GetQuestion(q_index);
@@ -59,6 +88,8 @@ void OnRequest(UDPServer* server,
       response = std::move(m_response).value();
     } else {
       std::move(m_response).error().Print();
+      // TODO: figure out how we reply here, since this was our failure to add
+      // a response.
       return;
     }
   }
@@ -67,16 +98,18 @@ void OnRequest(UDPServer* server,
   auto ext = response.Export(ws.get());
   if (!ext.is_ok()) {
     ext.Print();
+    // TODO: figure out how to reply here.
     return;
   }
   auto rs = ws->Convert();
-  server->SendData(rs->GetBuffer(), rs->Size());
+  write_out.SendData(rs->GetBuffer(), rs->Size());
 }
 
 }  // namespace homedns
 
+
 int main() {
-  auto server = homedns::UDPServer::Create(53);
+  auto server = homedns::UDPServer::Create(5300);
   if (!server) {
     return 1;
   }

@@ -1,38 +1,40 @@
 langs("C")
 
-cpp_binary (
+cc_binary (
   name = "bitstream",
   srcs = [
     "bitstream.cc"
   ],
-  deps = [
+  include = [
     "//homedns:include",
+  ],
+  deps = [
     "//base/status:status",
   ],
 )
 
-cpp_binary (
+cc_binary (
   name = "packet",
   srcs = [
     "packet.cc"
   ],
-  deps = [
+  include = [
     "//homedns:include",
-    "//homedns:packet",
-    "//homedns:records",
-    "//base/status:status",
+  ],
+  deps = [
+    "//homedns:libdns",
   ],
 )
 
-cpp_binary (
+cc_binary (
   name = "query",
   srcs = [
     "query.cc"
   ],
-  deps = [
+  include = [
     "//homedns:include",
-    "//homedns:packet",
-    "//base/status:status",
-    "//base/json:json_io",
+  ],
+  deps = [
+    "//homedns:libdns",
   ],
 )
